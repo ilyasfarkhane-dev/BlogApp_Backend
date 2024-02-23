@@ -1,14 +1,14 @@
 const express = require("express");
-
+const verifyToken = require('../middleware/virefyToken')
 const router = express.Router();
 const   Posts= require("../controllers/postController");
 
-router.get("/", Posts.getAllPostsController);
-router.get('/search',Posts.searchPostController);
-router.get('/:id',Posts.getPostsByIdController);
-router.post('/',Posts.createPostController);
-router.put('/:id',Posts.updatPostController);
-router.delete('/:id',Posts.deletePostController);
+router.get("/",verifyToken,Posts.getAllPostsController);
+router.get('/search',verifyToken,Posts.searchPostController);
+router.get('/:id',verifyToken,Posts.getPostsByIdController);
+router.post('/',verifyToken,Posts.createPostController);
+router.put('/:id',verifyToken,Posts.updatPostController);
+router.delete('/:id',verifyToken,Posts.deletePostController);
 
 
 

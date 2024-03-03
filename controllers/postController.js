@@ -1,80 +1,135 @@
-const postModl = require("../models/postsModele");
-const postsFile = require("../posts.json");
-const getAllPostsController = (req, res) => {
-  res.send(postModl.getAllPosts());
+const mongoose = require("mongoose");
+const post = require("../models/post");
+
+const getPostsByIdController = async (req, res) => {
+  try {
+    const blog = await post.findOne({ _id: req.params.id });
+
+    if (!blog || blog.length === 0) {
+      return res.status(404).send("Blog not found");
+    }
+    console.log(blog);
+    res.status(200).send(blog);
+  } catch (err) {
+    res.status(500).send("Error: " + err);
+  }
 };
-const searchPostController = (req, res) => {
-  const title = req.query.title;
-  const author = req.query.author;
-  let result = postsFile;
-  if (title) {
-    result = postsFile.filter((product) => {
-      return product.title.includes(title);
-    });
+const getPostsByTitleController = async (req, res) => {
+  try {
+    console.log(req.params.title);
+    const blog = await post.find({ title: req.params.title });
+
+    if (!blog) {
+      return res.status(404).send("Blog not found");
+    }
+
+    console.log(blog);
+    res.status(200).send(blog);
+  } catch (err) {
+    res.status(500).send("Error: " + err);
   }
-  if (author) {
-    result = postsFile.filter((product) => {
-      return product.author.includes(author);
-    });
-  }
-  if(author&&title){
-    result = postsFile.filter((product) =>
-    {return product.author.includes(author)&&product.title.includes(title)}
-    )
-  }
-  res.send(result);
 };
-const getPostsByIdController = (req, res) => {
+const getPostsByAuthorController = async (req, res) => {
+  try {
+    const blog = await post.find({ author: req.params.author });
+
+    if (!blog) {
+      return res.status(404).send("Blog not found");
+    }
+
+    console.log(blog);
+    res.status(200).send(blog);
+  } catch (err) {
+    res.status(500).send("Error: " + err);
+  }
+};
+
+const getPostsController = async (req, res) => {
+  try {
+    const blog = await post.find();
+
+    if (!blog) {
+      return res.status(404).send("Blog not found");
+    }
+
+    console.log(blog);
+    res.status(200).send(blog);
+  } catch (err) {
+    res.status(500).send("Error: " + err);
+  }
+};
+
+const createPostController = async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    const author = req.session.user.id;
+    //console.log(req.session.user.id);
+    await post.insertMany({ title, content, author });
+
+    res.status(201).send("Posts created successfully");
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const updatPostController = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.session.user.id;
+    const isAdmin = req.session.user.roles === "admin";
+    let query = { _id: postId };
+
+    if (!isAdmin) {
+      query.author = userId;
+    }
+
+    const updatedPost = await post.updateOne(query, req.body, {
+      new: true,
+    });
+
+    if (!updatedPost) {
+      return res
+        .status(404)
+        .send("Post not found or you are not authorized to update this post");
+    }
+
+    console.log(updatedPost);
+    res.status(200).send(updatedPost);
+  } catch (err) {
+    res.status(500).send("Error: " + err);
+  }
+};
+
+const deletePostController = async (req, res) => {
   const postId = req.params.id;
-  const post = postsFile.find((post) => post.id == postId);
-  if (post) {
-    res.send(post);
-  } else {
-    res.status(404).send("post by id Not found");
+  const userId = req.session.user.id;
+  const isAdmin = req.session.user.roles === "admin";
+
+  try {
+    let query = { _id: postId };
+
+    if (!isAdmin) {
+      query.author = userId;
+    }
+
+    const postDelet = await post.deleteOne(query);
+    if (postDelet.deletedCount === 0) {
+      return res
+        .status(404)
+        .send("Post not found or you are not authorized to delete this post");
+    }
+    res.status(201).send("Deleted!!!!");
+  } catch (err) {
+    res.status(500).send("Error: " + err);
   }
 };
-const createPostController = (req, res) => {
-  const newPost = req.body;
-  const postId =
-    postsFile.length > 0 ? postsFile[postsFile.length - 1].id + 1 : 1;
-  newPost.id = postId;
-  postsFile.push(newPost);
-  res.send("Post created successfully");
-  postModl.save_data();
-};
-
-const updatPostController = (req, res) => {
-  const urlId = req.params.id;
-  const findId = postsFile.findIndex((p) => p.id == urlId);
-  if (findId !== -1) {
-    const { title, author, content } = req.body;
-    postsFile[findId].title = title;
-    postsFile[findId].author = author;
-    postsFile[findId].content = content;
-
-    res.send("Updated");
-    postModl.save_data();
-  } else {
-    res.status(404).send("Post to update not found");
-  }
-};
-const deletePostController = (req, res) => {
-  const urlId = req.params.id;
-  const postIdToDelet = postsFile.findIndex((item) => item.id == urlId);
-  if (postIdToDelet !== -1) {
-    postsFile.splice(postIdToDelet, 1);
-    res.send("Poste Deleted");
-    postModl.save_data();
-  } else {
-    res.status(404).send("Post to delete not found");
-  }
-};
-
 module.exports = {
-  getAllPostsController,
   createPostController,
   getPostsByIdController,
+  getPostsByTitleController,
+  getPostsByAuthorController,
   updatPostController,
   deletePostController,
-  searchPostController,
+  getPostsController,
 };

@@ -15,7 +15,7 @@ router.get(
   Posts.getPostsByAuthorController
 );
 router.post("/", isAuthenticated, Posts.createPostController);
-router.put("/:id", isAuthenticated, Posts.updatPostController); // user can update just there posts
-router.delete("/:id", isAuthenticated, Posts.deletePostController); // user can delete just there posts
+router.put("/:id", isAuthenticated, Posts.updatPostController);
+router.delete("/:id", isAuthenticated, Posts.deletePostController);
 
 module.exports = router;
